@@ -9,7 +9,7 @@ rm sg-output.json;
 rm ec2-output.json;
 rm instance.json;
 unset $MYIP;
-USERPROFILE=~/
+USERPROFILE=~
 
 # === Get public IP address either from this computer or as a parameter
 echo Getting Public IP Address;
