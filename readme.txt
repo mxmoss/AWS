@@ -11,10 +11,12 @@
 
 
 #Configuring AWS CLI 
-aws configure 
-#sed -i.bak 's/\r$//' file.txt
+To copy files:
+scp -v -i \users\moss\key.pem AWSProxy.sh ec2-user@ec2-54-153-16-57.us-west-1.compute.amazonaws.com:~
 #sed -i.bak 's/\r$//' AWSProxy.sh
-
+aws configure 
+chmod +x AWSProxy.sh
+./AWSProxy.sh 
 
 curl -s https://checkip.amazonaws.com > myip.txt
 set /p MYIP=<myip.txt
@@ -55,3 +57,5 @@ rem Teardown
 aws ec2 terminate-instances --no-cli-pager --instance-ids %EC2_ID% > null
 aws ec2 delete-key-pair --no-cli-pager --key-pair-id %KEYPAIRID%
 aws ec2 delete-security-group --no-cli-pager --group-id %SGGROUPID%
+
+
