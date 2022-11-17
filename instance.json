@@ -1,0 +1,150 @@
+{
+    "Reservations": [
+        {
+            "Groups": [],
+            "Instances": [
+                {
+                    "AmiLaunchIndex": 0,
+                    "ImageId": "ami-061352bb71c4724b2",
+                    "InstanceId": "i-07a4a34bd42e4870f",
+                    "InstanceType": "t2.micro",
+                    "KeyName": "proxy-key-pair1",
+                    "LaunchTime": "2022-11-16T05:21:44+00:00",
+                    "Monitoring": {
+                        "State": "disabled"
+                    },
+                    "Placement": {
+                        "AvailabilityZone": "us-west-1a",
+                        "GroupName": "",
+                        "Tenancy": "default"
+                    },
+                    "PrivateDnsName": "ip-172-31-1-19.us-west-1.compute.internal",
+                    "PrivateIpAddress": "172.31.1.19",
+                    "ProductCodes": [],
+                    "PublicDnsName": "ec2-54-176-96-39.us-west-1.compute.amazonaws.com",
+                    "PublicIpAddress": "54.176.96.39",
+                    "State": {
+                        "Code": 16,
+                        "Name": "running"
+                    },
+                    "StateTransitionReason": "",
+                    "SubnetId": "subnet-07811d68632fd44c9",
+                    "VpcId": "vpc-05b7b19c6aea1612b",
+                    "Architecture": "x86_64",
+                    "BlockDeviceMappings": [
+                        {
+                            "DeviceName": "/dev/xvda",
+                            "Ebs": {
+                                "AttachTime": "2022-11-16T05:21:45+00:00",
+                                "DeleteOnTermination": true,
+                                "Status": "attached",
+                                "VolumeId": "vol-0dd79030e020f2c33"
+                            }
+                        }
+                    ],
+                    "ClientToken": "5efe9781-e1c7-4b45-b0d8-d49b7bc2f86f",
+                    "EbsOptimized": false,
+                    "EnaSupport": true,
+                    "Hypervisor": "xen",
+                    "NetworkInterfaces": [
+                        {
+                            "Association": {
+                                "IpOwnerId": "amazon",
+                                "PublicDnsName": "ec2-54-176-96-39.us-west-1.compute.amazonaws.com",
+                                "PublicIp": "54.176.96.39"
+                            },
+                            "Attachment": {
+                                "AttachTime": "2022-11-16T05:21:44+00:00",
+                                "AttachmentId": "eni-attach-021fe93c8f554e2ef",
+                                "DeleteOnTermination": true,
+                                "DeviceIndex": 0,
+                                "Status": "attached",
+                                "NetworkCardIndex": 0
+                            },
+                            "Description": "",
+                            "Groups": [
+                                {
+                                    "GroupName": "reverse-proxy1",
+                                    "GroupId": "sg-0581bf8720a94549a"
+                                }
+                            ],
+                            "Ipv6Addresses": [],
+                            "MacAddress": "06:21:35:c8:4a:bf",
+                            "NetworkInterfaceId": "eni-0942e24566331b470",
+                            "OwnerId": "967148083213",
+                            "PrivateDnsName": "ip-172-31-1-19.us-west-1.compute.internal",
+                            "PrivateIpAddress": "172.31.1.19",
+                            "PrivateIpAddresses": [
+                                {
+                                    "Association": {
+                                        "IpOwnerId": "amazon",
+                                        "PublicDnsName": "ec2-54-176-96-39.us-west-1.compute.amazonaws.com",
+                                        "PublicIp": "54.176.96.39"
+                                    },
+                                    "Primary": true,
+                                    "PrivateDnsName": "ip-172-31-1-19.us-west-1.compute.internal",
+                                    "PrivateIpAddress": "172.31.1.19"
+                                }
+                            ],
+                            "SourceDestCheck": true,
+                            "Status": "in-use",
+                            "SubnetId": "subnet-07811d68632fd44c9",
+                            "VpcId": "vpc-05b7b19c6aea1612b",
+                            "InterfaceType": "interface"
+                        }
+                    ],
+                    "RootDeviceName": "/dev/xvda",
+                    "RootDeviceType": "ebs",
+                    "SecurityGroups": [
+                        {
+                            "GroupName": "reverse-proxy1",
+                            "GroupId": "sg-0581bf8720a94549a"
+                        }
+                    ],
+                    "SourceDestCheck": true,
+                    "Tags": [
+                        {
+                            "Key": "Name",
+                            "Value": "MyProxyName"
+                        }
+                    ],
+                    "VirtualizationType": "hvm",
+                    "CpuOptions": {
+                        "CoreCount": 1,
+                        "ThreadsPerCore": 1
+                    },
+                    "CapacityReservationSpecification": {
+                        "CapacityReservationPreference": "open"
+                    },
+                    "HibernationOptions": {
+                        "Configured": false
+                    },
+                    "MetadataOptions": {
+                        "State": "applied",
+                        "HttpTokens": "optional",
+                        "HttpPutResponseHopLimit": 1,
+                        "HttpEndpoint": "enabled",
+                        "HttpProtocolIpv6": "disabled",
+                        "InstanceMetadataTags": "disabled"
+                    },
+                    "EnclaveOptions": {
+                        "Enabled": false
+                    },
+                    "PlatformDetails": "Linux/UNIX",
+                    "UsageOperation": "RunInstances",
+                    "UsageOperationUpdateTime": "2022-11-16T05:21:44+00:00",
+                    "PrivateDnsNameOptions": {
+                        "HostnameType": "ip-name",
+                        "EnableResourceNameDnsARecord": false,
+                        "EnableResourceNameDnsAAAARecord": false
+                    },
+                    "MaintenanceOptions": {
+                        "AutoRecovery": "default"
+                    }
+                }
+            ],
+            "OwnerId": "967148083213",
+            "ReservationId": "r-049b8db96c659e41b"
+        }
+    ]
+}
