@@ -2,3 +2,4 @@
 AWSTeardown.bat
 *.json
 *.json
+server.conf
