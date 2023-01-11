@@ -147,5 +147,6 @@ rem === Open Page in browser
 start http://%PUB_DNS%
 
 rem === Start reverse proxy
-echo Starting Rverse Proxy
+echo Starting Reverse Proxy
+echo ssh -i %USERPROFILE%\key.pem -R 8080:localhost:8080 ec2-user@%PUB_DNS%
 ssh -i %USERPROFILE%\key.pem -R 8080:localhost:8080 ec2-user@%PUB_DNS%
