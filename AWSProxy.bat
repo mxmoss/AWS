@@ -107,7 +107,8 @@ echo rem wait for the instance to terminate  >> %OUTFILE%
 echo aws ec2 wait instance-terminated --instance-ids %EC2_ID%  >> %OUTFILE%
 echo aws ec2 delete-key-pair --no-cli-pager --key-pair-id %KEYPAIRID%  >> %OUTFILE%
 echo aws ec2 delete-security-group --no-cli-pager --group-id %SGGROUPID%  >> %OUTFILE%
-echo Run AWSTeardown.bat to clean up afterward
+echo erase %OUTFILE%  >> %OUTFILE%
+echo Run %OUTFILE% to clean up afterward
   
 rem === create /etc/nginx/conf.d/server.conf
 echo Creating server.conf
@@ -148,5 +149,5 @@ start http://%PUB_DNS%
 
 rem === Start reverse proxy
 echo Starting Reverse Proxy
-echo ssh -i %USERPROFILE%\key.pem -R 8080:localhost:8080 ec2-user@%PUB_DNS%
+echo ssh -i %USERPROFILE%\key.pem -R 8080:localhost:8080 ec2-user@%PUB_DNS% > startme.txt
 ssh -i %USERPROFILE%\key.pem -R 8080:localhost:8080 ec2-user@%PUB_DNS%
