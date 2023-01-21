@@ -119,8 +119,8 @@ ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install pip git -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
+ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
 
-git clone https://github.com/mxmoss/vsg.git
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% python3 -m pip install django psycopg2-binary virtualenv
 
 rem configure postgres
@@ -130,7 +130,7 @@ rem add postgres to system startup
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl start postgresql
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl enable postgresql
 
-
+git clone https://github.com/mxmoss/vsg.git
 
 if %DEBUG%==1 pause
 
