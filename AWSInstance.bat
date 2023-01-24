@@ -131,6 +131,7 @@ ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl start postgresql
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl enable postgresql
 
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
+ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/AWS.git
 
 if %DEBUG%==1 pause
 
