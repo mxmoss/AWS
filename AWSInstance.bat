@@ -140,7 +140,5 @@ start http://%PUB_DNS%:8000
 
 rem === Start reverse proxy
 echo Connecting to server
-rem echo ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS%
-rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS%
-echo ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS%
+echo ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS% > startme.txt
 ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS%
