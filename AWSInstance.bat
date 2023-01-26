@@ -9,6 +9,8 @@ erase ec2-output.json
 erase instance.json
 set DEBUG==0
 set MYIP=
+set MYKEYNAME=proxy-key-pair1
+set MYSECURITYGROUP=reverse-proxy1
 
 rem === Get public IP address either from this computer or as a parameter
 echo Getting Public IP Address
@@ -49,7 +51,6 @@ erase %0.tmp
 
 rem === Create a key pair
 echo Creating Key Pair
-set MYKEYNAME=proxy-key-pair1
 aws ec2 create-key-pair --key-name %MYKEYNAME%  > key-output.json
 jq -r ".KeyPairId" key-output.json > %0.tmp
 set /p KEYPAIRID=<%0.tmp
@@ -61,7 +62,6 @@ jq -r ".KeyMaterial" key-output.json > %USERPROFILE%\key.pem
 
 rem === Create a security group
 echo Creating a security Group
-set MYSECURITYGROUP=reverse-proxy1
 aws ec2 create-security-group --group-name %MYSECURITYGROUP% --description reverse-proxy --vpc-id %VPCID% > sg-output.json
 jq -r ".GroupId" sg-output.json > %0.tmp
 set /p SGGROUPID=<%0.tmp
@@ -117,7 +117,7 @@ ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum upgrade -y
 rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install nginx1 -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install epel
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install pip git -y
+ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install pip git jq -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
 
@@ -131,14 +131,14 @@ ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl start postgresql
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl enable postgresql
 
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/AWS.git
+rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/AWS.git
 
 if %DEBUG%==1 pause
 
 rem === Open Page in browser
 start http://%PUB_DNS%:8000
 
-rem === Start reverse proxy
+rem === Connecting to server
 echo Connecting to server
 echo ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS% > startme.txt
 ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS%
