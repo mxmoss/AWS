@@ -132,6 +132,7 @@ ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl enable postgresql
 
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
+rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo chmod 700 /root/key.pem 
 
 if %DEBUG%==1 pause
 
