@@ -8,11 +8,13 @@ rm key-output.json;
 rm sg-output.json;
 rm ec2-output.json;
 rm instance.json;
-unset $MYIP;
 USERPROFILE=~
+MYKEYNAME="proxy-key-pair3"
+MYSECURITYGROUP="reverse-proxy3"
 
 # === Get public IP address either from this computer or as a parameter
 echo Getting Public IP Address;
+unset $MYIP;
 if [ -n "$1" ]
 then
   MYIP=$1;
@@ -22,6 +24,13 @@ else
  rm $0.tmp;
 fi
 echo $MYIP;
+sleep 5;
+
+echo Getting This IP Address;
+curl -s https://checkip.amazonaws.com > $0.tmp;
+THISIP=$(cat $0.tmp);
+rm $0.tmp;
+echo $THISIP;
 sleep 5;
 
 # === Setting region
@@ -48,7 +57,6 @@ rm $0.tmp
 
 # === Create a key pair
 echo Creating Key Pair
-MYKEYNAME="proxy-key-pair2"
 aws ec2 create-key-pair --key-name $MYKEYNAME  > key-output.json
 jq -r ".KeyPairId" key-output.json > $0.tmp
 KEYPAIRID=$(cat $0.tmp)
@@ -56,13 +64,13 @@ echo $KEYPAIRID
 sleep 5
 rm $0.tmp
 # Create the key.pem file
-jq -r ".KeyMaterial" key-output.json > $USERPROFILE\key.pem
+sudo bash  -c "jq -r '.KeyMaterial' key-output.json > $USERPROFILE/key.pem"
+sudo chmod 700 $USERPROFILE/key.pem 
 
 # === Create a security group
 echo Creating a security Group
-MYSECURITYGROUP="reverse-proxy2"
 aws ec2 create-security-group --group-name $MYSECURITYGROUP --description reverse-proxy2 --vpc-id $VPCID > sg-output.json
-jq -r ".GroupId" sg-output.json > $0.tmp
+sudo bash  -c "jq -r '.GroupId' sg-output.json > $0.tmp"
 SGGROUPID=$(cat $0.tmp)
 echo $SGGROUPID
 sleep 5
@@ -71,6 +79,7 @@ rm $0.tmp
 # === Configure security groups 
 echo Configuring security groups
 aws ec2 authorize-security-group-ingress --group-id $SGGROUPID --protocol tcp --port 22 --cidr $MYIP/32
+aws ec2 authorize-security-group-ingress --group-id $SGGROUPID --protocol tcp --port 22 --cidr $THISIP/32
 aws ec2 authorize-security-group-ingress --group-id $SGGROUPID  --protocol tcp --port 80 --cidr 0.0.0.0/0
 sleep 5
 
@@ -78,7 +87,7 @@ sleep 5
 echo Creating the instance
 MYTAGS="ResourceType=instance,Tags=[{Key=Name,Value=ProxyOnDemandName}]"
 aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --count 1 --instance-type t2.micro --key-name $MYKEYNAME --security-group-ids $SGGROUPID --subnet-id $SUBNETID --tag-specifications $MYTAGS > ec2-output.json
-jq -r ".Instances[] | .InstanceId" ec2-output.json> $0.tmp
+sudo bash  -c "jq -r '.Instances[] | .InstanceId' ec2-output.json> $0.tmp "
 EC2_ID=$(cat $0.tmp)
 echo $EC2_ID
 sleep 5
@@ -91,14 +100,22 @@ aws ec2 wait instance-status-ok --instance-ids $EC2_ID
 # === Get public DNS
 echo Getting public DNS
 aws ec2 describe-instances --instance-ids  $EC2_ID > instance.json
-jq -r ".Reservations []| .Instances [] | .PublicDnsName" instance.json > $0.tmp
+sudo bash  -c "jq -r '.Reservations []| .Instances [] | .PublicDnsName' instance.json > $0.tmp "
 PUB_DNS=$(cat $0.tmp)
 echo $PUB_DNS
 sleep 5
 rm $0.tmp
 
+# === Get public IP
+echo Getting public IP
+sudo bash  -c "jq -r '.Reservations []| .Instances [] | .PublicIpAddress' instance.json > $0.tmp"
+PUB_IP=$(cat $0.tmp)
+echo $PUB_IP
+sleep 5
+rm $0.tmp
+
 # === Create the teardown script to run later
-echo Creating AWSTeardown.sh                                                                                            
+echo Creating AWSTeardown                                                                                    
 OUTFILE="AWSTeardown.sh"
 echo $OUTFILE
 echo "#!/bin/bash" > $OUTFILE
@@ -107,8 +124,9 @@ echo "# wait for the instance to terminate"  >> $OUTFILE
 echo "aws ec2 wait instance-terminated --instance-ids $EC2_ID"  >> $OUTFILE
 echo "aws ec2 delete-key-pair --key-pair-id $KEYPAIRID"  >> $OUTFILE
 echo "aws ec2 delete-security-group --group-id $SGGROUPID"  >> $OUTFILE
-echo Run AWSTeardown.sh to clean up afterward
-  
+echo Run $OUTFILE to clean up afterward
+sudo chmod +x $OUTFILE
+
 # === create /etc/nginx/conf.d/server.conf
 echo Creating server.conf
 OUTFILE="server.conf"
@@ -118,9 +136,9 @@ echo "}	"		>> $OUTFILE
 echo "server {	"	>> $OUTFILE
 echo "  server_name $PUB_DNS;"	>> $OUTFILE
 echo "  location / {"	>> $OUTFILE
-echo "    proxy_set_header X-Real-IP $remote_addr;	"		>> $OUTFILE
-echo "    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;	" >> $OUTFILE
-echo "    proxy_set_header Host $http_host;"	>> $OUTFILE
+echo "    proxy_set_header X-Real-IP \$remote_addr;	"		>> $OUTFILE
+echo "    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;	" >> $OUTFILE
+echo "    proxy_set_header Host \$http_host;"	>> $OUTFILE
 echo "    proxy_redirect off;	"		>> $OUTFILE
 echo "    proxy_pass http://tunnel;	"	>> $OUTFILE
 echo "  }	"	>> $OUTFILE
@@ -129,17 +147,22 @@ sleep 5
 
 # === Update server
 echo Configuring server
-ssh -o StrictHostKeyChecking=no -i $USERPROFILE\key.pem ec2-user@$PUB_DNS sudo yum update -y
-ssh -i $USERPROFILE\key.pem ec2-user@$PUB_DNS sudo amazon-linux-extras install nginx1 -y
-scp -v -i $USERPROFILE\key.pem server.conf ec2-user@$PUB_DNS:/tmp
-ssh -i $USERPROFILE\key.pem ec2-user@$PUB_DNS sudo sed -i '/octet-stream;/a \\tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.conf
-ssh -i $USERPROFILE\key.pem ec2-user@$PUB_DNS sudo mv /tmp/server.conf /etc/nginx/conf.d/
-ssh -i $USERPROFILE\key.pem ec2-user@$PUB_DNS sudo service nginx start
+ssh -o StrictHostKeyChecking=no -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo yum update -y
+ssh -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo amazon-linux-extras install nginx1 -y
+echo sudo scp -i $USERPROFILE/key.pem server.conf ec2-user@$PUB_IP:/tmp
+sudo scp -i $USERPROFILE/key.pem server.conf ec2-user@$PUB_IP:/tmp
+echo Editing nginx.conf file
+sudo ssh -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo bash -c \'sed -i \"/user nginx\;/d\" /etc/nginx/nginx.conf\'
+sudo ssh -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo bash  -c \'sed -i \"/octet-stream\;/a    server_names_hash_bucket_size 128\;\" /etc/nginx/nginx.conf\'
+echo Configuring nginx conf.d
+ssh -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo mv /tmp/server.conf /etc/nginx/conf.d/
+echo Restarting nginx
+ssh -i $USERPROFILE/key.pem ec2-user@$PUB_IP sudo service nginx start
 sleep 5
 
-# === Open Page in browser
-# start http://$PUB_DNS
-
-# === Start reverse proxy
-echo Starting Rverse Proxy
-ssh -i $USERPROFILE\key.pem -R 8080:localhost:8080 ec2-user@$PUB_DNS
+# === Instructions for reverse proxy from local
+echo Reverse proxy is started 
+echo use this key to create a key2.pem file 
+jq -r '.KeyMaterial' key-output.json
+echo and use this command to create the proxy connection
+echo ssh -i key2.pem -R 8080:localhost:8080 ec2-user@$PUB_IP
