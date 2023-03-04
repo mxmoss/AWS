@@ -1,20 +1,25 @@
 @echo off
-rem * This batch file will instantiate an AWS EC2 instance with a reverse proxy
+rem * This batch file will instantiate an AWS EC2 instance
 rem *
+rem Usage: AWSInstance <instance #> <ip address> <django Y|N>
 rem === Clean up before-hand
 echo Prepping...
 erase key-output.json
 erase sg-output.json
 erase ec2-output.json
 erase instance.json
-set DEBUG==0
+set DEBUG==1
 set MYIP=
-set MYKEYNAME=proxy-key-pair1
-set MYSECURITYGROUP=reverse-proxy1
+set INCLUDEDJANGO=
+
+set MYINST=%1
+if %1!==! set MYINST=1
+set MYKEYNAME=proxy-key-pair%MYINST%
+set MYSECURITYGROUP=reverse-proxy%MYINST%
 
 rem === Get public IP address either from this computer or as a parameter
 echo Getting Public IP Address
-if not %1!==! set MYIP=%1
+if not %2!==! set MYIP=%2
 echo %MYIP%
 if %DEBUG%==1 pause
 
@@ -26,6 +31,8 @@ if %DEBUG%==1 pause
 erase %0.tmp
 :IPisParam
 
+rem === Include Django?
+if not %3!==! set INCLUDEDJANGO=1
 
 rem === Setting region
 echo Setting the region
@@ -79,7 +86,8 @@ if %DEBUG%==1 pause
 rem === Create the instance 
 echo Creating the instance
 set MYTAGS="ResourceType=instance,Tags=[{Key=Name,Value=MyProxyName}]"
-aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --count 1 --instance-type t2.micro --key-name %MYKEYNAME% --security-group-ids %SGGROUPID% --subnet-id %SUBNETID% --tag-specifications %MYTAGS%  > ec2-output.json
+rem aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --count 1 --instance-type t2.micro --key-name %MYKEYNAME% --security-group-ids %SGGROUPID% --subnet-id %SUBNETID% --tag-specifications %MYTAGS%  > ec2-output.json
+aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-windows-latest/Windows_Server-2016-English-Full-Base --count 1 --instance-type t2.micro --key-name %MYKEYNAME% --security-group-ids %SGGROUPID% --subnet-id %SUBNETID% --tag-specifications %MYTAGS%  > ec2-output.json
 jq -r ".Instances[] | .InstanceId" ec2-output.json> %0.tmp
 set /p EC2_ID=<%0.tmp
 echo %EC2_ID%
@@ -110,17 +118,19 @@ echo aws ec2 delete-security-group --no-cli-pager --group-id %SGGROUPID%  >> %OU
 echo erase %OUTFILE%  >> %OUTFILE%
 echo Run %OUTFILE% to clean up afterward
   
-rem === Update server
 echo Configuring server
 ssh -o StrictHostKeyChecking=no -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum upgrade -y
+
+if not %INCLUDEDJANGO%==1 goto NoDjango
+
+rem == Configure server to run django + postgres
 rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install nginx1 -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install epel
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install pip git jq -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
-
 ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% python3 -m pip install django psycopg2-binary virtualenv
 
 rem configure postgres
@@ -143,3 +153,6 @@ rem === Connecting to server
 echo Connecting to server
 echo ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS% > startme.txt
 ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS%
+
+:NoDjango
+
