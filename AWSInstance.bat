@@ -8,9 +8,10 @@ erase key-output.json
 erase sg-output.json
 erase ec2-output.json
 erase instance.json
-set DEBUG==1
+set DEBUG=0
 set MYIP=
 set INCLUDEDJANGO=
+set MYREGION=region us-west-1
 
 set MYINST=%1
 if %1!==! set MYINST=1
@@ -36,7 +37,7 @@ if not %3!==! set INCLUDEDJANGO=1
 
 rem === Setting region
 echo Setting the region
-aws configure set region us-west-1
+aws configure set %MYREGION%
 aws configure set cli_pager ""
 
 rem === Get the first VPC id
@@ -120,14 +121,15 @@ echo rem wait for the instance to terminate  >> %OUTFILE%
 echo aws ec2 wait instance-terminated --instance-ids %EC2_ID%  >> %OUTFILE%
 echo aws ec2 delete-key-pair --no-cli-pager --key-pair-id %KEYPAIRID%  >> %OUTFILE%
 echo aws ec2 delete-security-group --no-cli-pager --group-id %SGGROUPID%  >> %OUTFILE%
+echo erase %KEYPEM% >> %OUTFILE%
 echo erase %OUTFILE%  >> %OUTFILE%
 echo Run %OUTFILE% to clean up afterward
   
+if %INCLUDEDJANGO%!==! goto NoDjango
+
 echo Configuring server
 ssh -o StrictHostKeyChecking=no -i %KEYPEM% %CREDENTIAL% sudo yum update -y
 ssh -i %KEYPEM% %CREDENTIAL% sudo yum upgrade -y
-
-if not %INCLUDEDJANGO%==1 goto NoDjango
 
 rem == Configure server to run django + postgres
 rem ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras install nginx1 -y
@@ -160,4 +162,3 @@ echo ssh -i %KEYPEM%  %CREDENTIAL% > startme.txt
 ssh -i %KEYPEM%  %CREDENTIAL%
 
 :NoDjango
-
