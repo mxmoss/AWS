@@ -65,7 +65,8 @@ echo %KEYPAIRID%
 if %DEBUG%==1 pause
 erase %0.tmp
 rem Create the key.pem file
-jq -r ".KeyMaterial" key-output.json > %USERPROFILE%\key.pem
+set KEYPEM=%USERPROFILE%\key%MYINST%.pem
+jq -r ".KeyMaterial" key-output.json > %KEYPEM%
 
 rem === Create a security group
 echo Creating a security Group
@@ -85,7 +86,9 @@ if %DEBUG%==1 pause
 
 rem === Create the instance 
 echo Creating the instance
-set MYTAGS="ResourceType=instance,Tags=[{Key=Name,Value=MyProxyName}]"
+set MYTAGS="ResourceType=instance,Tags=[{Key=Name,Value=my_instance_%MYINST%}]"
+echo %MYTAGS%
+if %DEBUG%==1 pause
 rem aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --count 1 --instance-type t2.micro --key-name %MYKEYNAME% --security-group-ids %SGGROUPID% --subnet-id %SUBNETID% --tag-specifications %MYTAGS%  > ec2-output.json
 aws ec2 run-instances --image-id resolve:ssm:/aws/service/ami-windows-latest/Windows_Server-2016-English-Full-Base --count 1 --instance-type t2.micro --key-name %MYKEYNAME% --security-group-ids %SGGROUPID% --subnet-id %SUBNETID% --tag-specifications %MYTAGS%  > ec2-output.json
 jq -r ".Instances[] | .InstanceId" ec2-output.json> %0.tmp
@@ -108,8 +111,8 @@ if %DEBUG%==1 pause
 erase %0.tmp
 
 rem === Create the teardown script to run later
-echo Creating AWSTeardown.bat
-set OUTFILE=AWSTeardown.bat
+echo Creating AWSTeardown%MYINST%.bat
+set OUTFILE=AWSTeardown%MYINST%.bat
 echo aws ec2 terminate-instances --no-cli-pager --instance-ids %EC2_ID%  > %OUTFILE%
 echo rem wait for the instance to terminate  >> %OUTFILE%
 echo aws ec2 wait instance-terminated --instance-ids %EC2_ID%  >> %OUTFILE%
@@ -119,30 +122,30 @@ echo erase %OUTFILE%  >> %OUTFILE%
 echo Run %OUTFILE% to clean up afterward
   
 echo Configuring server
-ssh -o StrictHostKeyChecking=no -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum upgrade -y
+ssh -o StrictHostKeyChecking=no -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum update -y
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum upgrade -y
 
 if not %INCLUDEDJANGO%==1 goto NoDjango
 
 rem == Configure server to run django + postgres
-rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install nginx1 -y
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras install epel
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install pip git jq -y
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo yum update -y
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% python3 -m pip install django psycopg2-binary virtualenv
+rem ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras install nginx1 -y
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras install epel
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum install pip git jq -y
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum update -y
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% python3 -m pip install django psycopg2-binary virtualenv
 
 rem configure postgres
 rem init db
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo postgresql-setup --initdb --unit postgresql
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo postgresql-setup --initdb --unit postgresql
 rem add postgres to system startup 
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl start postgresql
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo systemctl enable postgresql
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo systemctl start postgresql
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo systemctl enable postgresql
 
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
-ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
-rem ssh -i %USERPROFILE%\key.pem ec2-user@%PUB_DNS% sudo chmod 700 /root/key.pem 
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
+ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
+rem ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo chmod 700 /root/key.pem 
 
 if %DEBUG%==1 pause
 
@@ -151,8 +154,8 @@ start http://%PUB_DNS%:8000
 
 rem === Connecting to server
 echo Connecting to server
-echo ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS% > startme.txt
-ssh -i %USERPROFILE%\key.pem  ec2-user@%PUB_DNS%
+echo ssh -i %KEYPEM%  ec2-user@%PUB_DNS% > startme.txt
+ssh -i %KEYPEM%  ec2-user@%PUB_DNS%
 
 :NoDjango
 
