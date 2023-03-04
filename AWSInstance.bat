@@ -24,11 +24,11 @@ echo %MYIP%
 if %DEBUG%==1 pause
 
 if not %MYIP%!==! goto IPisParam
-curl -s https://checkip.amazonaws.com > %0.tmp
-set /p MYIP=<%0.tmp
-echo %MYIP%
-if %DEBUG%==1 pause
-erase %0.tmp
+  curl -s https://checkip.amazonaws.com > %0.tmp
+  set /p MYIP=<%0.tmp
+  echo %MYIP%
+  if %DEBUG%==1 pause
+  erase %0.tmp
 :IPisParam
 
 rem === Include Django?
@@ -77,12 +77,12 @@ echo %SGGROUPID%
 if %DEBUG%==1 pause
 erase %0.tmp
 
-rem === Configure security groups 
-echo Configuring security groups
+rem === Configure security group 
+echo Configuring security group
+aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 80   --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 22   --cidr %MYIP%/32
+aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 3389 --cidr %MYIP%/32
 aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 8000 --cidr %MYIP%/32
-aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 22 --cidr %MYIP%/32
-aws ec2 authorize-security-group-ingress --group-id %SGGROUPID%  --protocol tcp --port 80 --cidr 0.0.0.0/0
-aws ec2 authorize-security-group-ingress --group-id %SGGROUPID%  --protocol rdp --port 3389 --cidr %MYIP%/32
 if %DEBUG%==1 pause
 
 rem === Create the instance 
