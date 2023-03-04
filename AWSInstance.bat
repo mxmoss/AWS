@@ -82,6 +82,7 @@ echo Configuring security groups
 aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 8000 --cidr %MYIP%/32
 aws ec2 authorize-security-group-ingress --group-id %SGGROUPID% --protocol tcp --port 22 --cidr %MYIP%/32
 aws ec2 authorize-security-group-ingress --group-id %SGGROUPID%  --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id %SGGROUPID%  --protocol rdp --port 3389 --cidr %MYIP%/32
 if %DEBUG%==1 pause
 
 rem === Create the instance 
@@ -107,6 +108,7 @@ aws ec2 describe-instances --instance-ids  %EC2_ID% > instance.json
 jq -r ".Reservations []| .Instances [] | .PublicDnsName" instance.json > %0.tmp
 set /p PUB_DNS=<%0.tmp
 echo %PUB_DNS%
+set CREDENTIAL=ec2-user@%PUB_DNS%
 if %DEBUG%==1 pause
 erase %0.tmp
 
@@ -122,30 +124,30 @@ echo erase %OUTFILE%  >> %OUTFILE%
 echo Run %OUTFILE% to clean up afterward
   
 echo Configuring server
-ssh -o StrictHostKeyChecking=no -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum update -y
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum upgrade -y
+ssh -o StrictHostKeyChecking=no -i %KEYPEM% %CREDENTIAL% sudo yum update -y
+ssh -i %KEYPEM% %CREDENTIAL% sudo yum upgrade -y
 
 if not %INCLUDEDJANGO%==1 goto NoDjango
 
 rem == Configure server to run django + postgres
-rem ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras install nginx1 -y
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras install epel
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo amazon-linux-extras enable postgresql14
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum install pip git jq -y
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum install postgresql-server libpq-devel nginx -y
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo yum update -y
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% python3 -m pip install django psycopg2-binary virtualenv
+rem ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras install nginx1 -y
+ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras install epel
+ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras enable postgresql14
+ssh -i %KEYPEM% %CREDENTIAL% sudo yum install pip git jq -y
+ssh -i %KEYPEM% %CREDENTIAL% sudo yum install postgresql-server libpq-devel nginx -y
+ssh -i %KEYPEM% %CREDENTIAL% sudo yum update -y
+ssh -i %KEYPEM% %CREDENTIAL% python3 -m pip install django psycopg2-binary virtualenv
 
 rem configure postgres
 rem init db
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo postgresql-setup --initdb --unit postgresql
+ssh -i %KEYPEM% %CREDENTIAL% sudo postgresql-setup --initdb --unit postgresql
 rem add postgres to system startup 
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo systemctl start postgresql
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo systemctl enable postgresql
+ssh -i %KEYPEM% %CREDENTIAL% sudo systemctl start postgresql
+ssh -i %KEYPEM% %CREDENTIAL% sudo systemctl enable postgresql
 
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo git clone https://github.com/mxmoss/vsg.git
-ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
-rem ssh -i %KEYPEM% ec2-user@%PUB_DNS% sudo chmod 700 /root/key.pem 
+ssh -i %KEYPEM% %CREDENTIAL% sudo git clone https://github.com/mxmoss/vsg.git
+ssh -i %KEYPEM% %CREDENTIAL% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
+rem ssh -i %KEYPEM% %CREDENTIAL% sudo chmod 700 /root/key.pem 
 
 if %DEBUG%==1 pause
 
@@ -154,8 +156,8 @@ start http://%PUB_DNS%:8000
 
 rem === Connecting to server
 echo Connecting to server
-echo ssh -i %KEYPEM%  ec2-user@%PUB_DNS% > startme.txt
-ssh -i %KEYPEM%  ec2-user@%PUB_DNS%
+echo ssh -i %KEYPEM%  %CREDENTIAL% > startme.txt
+ssh -i %KEYPEM%  %CREDENTIAL%
 
 :NoDjango
 
