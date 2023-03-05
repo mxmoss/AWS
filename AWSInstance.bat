@@ -1,7 +1,7 @@
 @echo off
 rem * This batch file will instantiate an AWS EC2 instance
 rem *
-rem Usage: AWSInstance <instance #> <ip address> <django Y|N>
+rem Usage: AWSInstance <instance #> <django Y> <ip address> 
 rem === Clean up before-hand
 echo Prepping...
 erase key-output.json
@@ -18,9 +18,12 @@ if %1!==! set MYINST=1
 set MYKEYNAME=proxy-key-pair%MYINST%
 set MYSECURITYGROUP=reverse-proxy%MYINST%
 
+rem === Include Django?
+if not %2!==! set INCLUDEDJANGO=1
+
 rem === Get public IP address either from this computer or as a parameter
 echo Getting Public IP Address
-if not %2!==! set MYIP=%2
+if not %3!==! set MYIP=%3
 echo %MYIP%
 if %DEBUG%==1 pause
 
@@ -31,9 +34,6 @@ if not %MYIP%!==! goto IPisParam
   if %DEBUG%==1 pause
   erase %0.tmp
 :IPisParam
-
-rem === Include Django?
-if not %3!==! set INCLUDEDJANGO=1
 
 rem === Setting region
 echo Setting the region
@@ -125,40 +125,4 @@ echo erase %KEYPEM% >> %OUTFILE%
 echo erase %OUTFILE%  >> %OUTFILE%
 echo Run %OUTFILE% to clean up afterward
   
-if %INCLUDEDJANGO%!==! goto NoDjango
-
-echo Configuring server
-ssh -o StrictHostKeyChecking=no -i %KEYPEM% %CREDENTIAL% sudo yum update -y
-ssh -i %KEYPEM% %CREDENTIAL% sudo yum upgrade -y
-
-rem == Configure server to run django + postgres
-rem ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras install nginx1 -y
-ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras install epel
-ssh -i %KEYPEM% %CREDENTIAL% sudo amazon-linux-extras enable postgresql14
-ssh -i %KEYPEM% %CREDENTIAL% sudo yum install pip git jq -y
-ssh -i %KEYPEM% %CREDENTIAL% sudo yum install postgresql-server libpq-devel nginx -y
-ssh -i %KEYPEM% %CREDENTIAL% sudo yum update -y
-ssh -i %KEYPEM% %CREDENTIAL% python3 -m pip install django psycopg2-binary virtualenv
-
-rem configure postgres
-rem init db
-ssh -i %KEYPEM% %CREDENTIAL% sudo postgresql-setup --initdb --unit postgresql
-rem add postgres to system startup 
-ssh -i %KEYPEM% %CREDENTIAL% sudo systemctl start postgresql
-ssh -i %KEYPEM% %CREDENTIAL% sudo systemctl enable postgresql
-
-ssh -i %KEYPEM% %CREDENTIAL% sudo git clone https://github.com/mxmoss/vsg.git
-ssh -i %KEYPEM% %CREDENTIAL% sudo chmod +x ~/vsg/vsgSite/vsgSite/static/AWSProxy.sh
-rem ssh -i %KEYPEM% %CREDENTIAL% sudo chmod 700 /root/key.pem 
-
-if %DEBUG%==1 pause
-
-rem === Open Page in browser
-start http://%PUB_DNS%:8000
-
-rem === Connecting to server
-echo Connecting to server
-echo ssh -i %KEYPEM%  %CREDENTIAL% > startme.txt
-ssh -i %KEYPEM%  %CREDENTIAL%
-
-:NoDjango
+if not %INCLUDEDJANGO%!==! call AWSConfig.bat
