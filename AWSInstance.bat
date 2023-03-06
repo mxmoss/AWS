@@ -2,6 +2,12 @@
 rem * This batch file will instantiate an AWS EC2 instance
 rem *
 rem Usage: AWSInstance <instance #> <django Y> <ip address> 
+rem *
+rem * Prerequisites
+rem AWS CLI - https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html
+rem jq - sudo yum install jq
+rem https://stedolan.github.io/jq/download/
+rem *
 rem === Clean up before-hand
 echo Prepping...
 erase key-output.json
